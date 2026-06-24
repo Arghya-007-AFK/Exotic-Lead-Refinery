@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Exotic Lead Refinery</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/libphonenumber-js@1.11.4/bundle/libphonenumber-js.max.js"></script>
+<style>
+  :root{
+    --bg:#14141b; --bg-soft:#191a22; --panel:#1d1e28; --panel-2:#23242f;
+    --line:rgba(255,255,255,.085); --line-2:rgba(255,255,255,.15);
+    --ink:#ece9e2; --muted:#8b909f; --faint:#5b6072;
+    --amber:#f2ab3e; --amber-deep:#c9842a; --amber-ink:#1a1206;
+    --teal:#46cdb8; --clay:#e3805f;
+    --glow:rgba(242,171,62,.14);
+    --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+    --sans:"Space Grotesk",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    --ease:cubic-bezier(.22,.61,.36,1);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    font-family:var(--sans); background:var(--bg); color:var(--ink);
+    line-height:1.5; -webkit-font-smoothing:antialiased; padding:46px 20px 70px;
+    overflow-x:hidden; position:relative;
+  }
+  /* engineering grid + warm glow */
+  body::before{
+    content:""; position:fixed; inset:0; z-index:0; pointer-events:none;
+    background-image:
+      linear-gradient(rgba(255,255,255,.022) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.022) 1px, transparent 1px);
+    background-size:48px 48px;
+    -webkit-mask:radial-gradient(120% 70% at 50% -8%, #000 0%, transparent 72%);
+            mask:radial-gradient(120% 70% at 50% -8%, #000 0%, transparent 72%);
+  }
+  body::after{
+    content:""; position:fixed; top:-260px; left:50%; transform:translateX(-50%);
+    width:980px; height:560px; z-index:0; pointer-events:none; filter:blur(8px);
+    background:radial-gradient(ellipse at center, var(--glow), transparent 70%);
+  }
+  .wrap{ max-width:940px; margin:0 auto; position:relative; z-index:1 }
+
+  /* ---- motion ---- */
+  @keyframes riseIn{ from{opacity:0; transform:translateY(16px)} to{opacity:1; transform:none} }
+  @keyframes fadeIn{ from{opacity:0} to{opacity:1} }
+  @keyframes popNum{ 0%{transform:scale(.92)} 60%{transform:scale(1.045)} 100%{transform:scale(1)} }
+  @keyframes shimmer{ 0%{background-position:-180% 0} 100%{background-position:180% 0} }
+  @keyframes flowDot{ 0%{left:-8%; opacity:0} 12%{opacity:1} 88%{opacity:1} 100%{left:106%; opacity:0} }
+  @keyframes spin{ to{transform:rotate(360deg)} }
+  @keyframes glowPulse{ 0%,100%{opacity:.5} 50%{opacity:1} }
+  @keyframes okPulse{ 0%{box-shadow:0 0 0 0 rgba(70,205,184,.4)} 100%{box-shadow:0 0 0 16px rgba(70,205,184,0)} }
+  .anim{ animation:riseIn .6s var(--ease) both }
+  .d1{animation-delay:.04s}.d2{animation-delay:.12s}.d3{animation-delay:.2s}.d4{animation-delay:.28s}
+
+  /* ---- header ---- */
+  header.top{ margin-bottom:32px }
+  .brandrow{
+    display:flex; align-items:center; gap:12px; margin-bottom:18px;
+    font-family:var(--mono); font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--muted);
+  }
+  .brandrow .mark{ color:var(--amber); font-size:13px; transform:translateY(.5px); animation:glowPulse 3.4s ease-in-out infinite }
+  .brandrow .sep{ flex:1; height:1px; background:linear-gradient(90deg,var(--line-2),transparent) }
+  .brandrow .chip{
+    border:1px solid var(--line); border-radius:20px; padding:3px 11px; color:var(--faint);
+    letter-spacing:.12em;
+  }
+  h1{ font-size:clamp(32px,6vw,52px); line-height:1.02; margin:0 0 12px; letter-spacing:-.025em; font-weight:700 }
+  h1 .hl{ color:var(--amber); position:relative }
+  .sub{ color:var(--muted); max-width:62ch; margin:0; font-size:15.5px }
+  .sub code{ font-family:var(--mono); font-size:.84em; color:var(--ink); background:rgba(255,255,255,.06); border:1px solid var(--line); padding:1px 6px; border-radius:5px }
+
+  /* ---- reticle / scanner drop target ---- */
+  .reticle{
+    display:block; position:relative; overflow:hidden;
+    margin-top:30px; border:1px solid var(--line); border-radius:16px;
+    background:linear-gradient(180deg, var(--panel), var(--bg-soft));
+    padding:52px 24px; text-align:center; cursor:pointer;
+    transition:border-color .2s var(--ease), transform .2s var(--ease), box-shadow .2s var(--ease);
+  }
+  .reticle:hover{ transform:translateY(-2px); border-color:var(--line-2); box-shadow:0 24px 60px -34px rgba(0,0,0,.7) }
+  .reticle.drag{ border-color:var(--amber); box-shadow:0 0 0 1px var(--amber) inset, 0 24px 60px -30px var(--glow) }
+  .reticle .tick{ position:absolute; width:16px; height:16px; border:2px solid var(--amber); opacity:.65; transition:opacity .2s, width .2s, height .2s }
+  .reticle:hover .tick, .reticle.drag .tick{ opacity:1; width:20px; height:20px }
+  .tick.tl{ top:14px; left:14px; border-right:0; border-bottom:0; border-radius:5px 0 0 0 }
+  .tick.tr{ top:14px; right:14px; border-left:0; border-bottom:0; border-radius:0 5px 0 0 }
+  .tick.bl{ bottom:14px; left:14px; border-right:0; border-top:0; border-radius:0 0 0 5px }
+  .tick.br{ bottom:14px; right:14px; border-left:0; border-top:0; border-radius:0 0 5px 0 }
+  .glyph{
+    width:54px;height:54px;border-radius:14px;margin:0 auto 16px;
+    display:grid;place-items:center;background:var(--amber);color:var(--amber-ink);
+    font-size:23px;font-weight:700; box-shadow:0 10px 30px -10px var(--glow);
+    transition:transform .25s var(--ease);
+  }
+  .reticle:hover .glyph{ transform:translateY(-3px) }
+  .reticle.busy .glyph{ animation:spin 1s linear infinite }
+  .reticle h2{ font-size:19px; margin:0 0 5px; font-weight:600; letter-spacing:-.01em }
+  .reticle p{ margin:0; color:var(--muted); font-size:14px }
+  .reticle .fname{ font-family:var(--mono); font-size:12.5px; color:var(--teal); margin-top:10px }
+  .reticle .scan{ position:absolute; left:0; right:0; bottom:0; height:2px; overflow:hidden; opacity:0 }
+  .reticle.busy .scan{ opacity:1 }
+  .reticle .scan::before{ content:""; position:absolute; inset:0; background:linear-gradient(90deg,transparent,var(--amber),transparent); background-size:180% 100%; animation:shimmer 1s linear infinite }
+  input[type=file]{ display:none }
+
+  /* ---- gauge cluster (funnel) ---- */
+  .pipe{ margin-top:34px; display:none }
+  .pipe.show{ display:block }
+  .gauge{
+    position:relative; display:grid; grid-template-columns:repeat(4,1fr);
+    border:1px solid var(--line); border-radius:16px; overflow:hidden;
+    background:linear-gradient(180deg,var(--panel),var(--bg-soft));
+    box-shadow:0 30px 70px -50px #000;
+  }
+  .gauge .flow{ position:absolute; top:0; height:2px; width:64px; left:-8%; background:linear-gradient(90deg,transparent,var(--amber),transparent); pointer-events:none; opacity:0; filter:drop-shadow(0 0 6px var(--amber)) }
+  .pipe.run .flow{ animation:flowDot 1.7s var(--ease) .2s 1 }
+  .cell{ padding:22px 20px; position:relative; border-right:1px solid var(--line); opacity:0 }
+  .cell.in{ animation:riseIn .5s var(--ease) both }
+  .cell:last-child{ border-right:none }
+  .cell .lab{ font-family:var(--mono); font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:var(--faint); margin-bottom:10px }
+  .cell .num{ font-family:var(--mono); font-size:31px; font-weight:600; letter-spacing:-.02em; line-height:1; color:var(--ink); font-variant-numeric:tabular-nums }
+  .cell.counting .num{ animation:popNum .4s var(--ease) }
+  .cell .meter{ height:3px; margin-top:14px; border-radius:3px; background:rgba(255,255,255,.07); overflow:hidden }
+  .cell .meter > span{ display:block; height:100%; width:0; border-radius:3px; transition:width .9s var(--ease); background:var(--amber) }
+  .cell.k .meter > span{ background:var(--teal) }
+  .cell .delta{ font-family:var(--mono); font-size:11.5px; margin-top:10px; color:var(--clay); opacity:0 }
+  .cell.in .delta{ animation:fadeIn .4s ease .35s both }
+  .cell.final{ background:linear-gradient(180deg, rgba(70,205,184,.07), rgba(70,205,184,.02)) }
+  .cell.final .num{ color:var(--teal) }
+  .cell.final.done .num{ display:inline-block; animation:popNum .4s var(--ease) }
+  .cell .arrow{
+    position:absolute; right:-10px; top:50%; transform:translateY(-50%); width:20px;height:20px;border-radius:50%;
+    background:var(--bg-soft); border:1px solid var(--line); display:grid;place-items:center; z-index:2; color:var(--amber); font-size:11px;
+  }
+  .cell:last-child .arrow{ display:none }
+
+  .actionbar{ display:flex; flex-wrap:wrap; gap:12px; align-items:center; margin-top:24px }
+  button.dl{
+    font-family:var(--sans); font-weight:600; font-size:15px;
+    background:var(--amber); color:var(--amber-ink); border:none; border-radius:11px;
+    padding:13px 24px; cursor:pointer; letter-spacing:.005em;
+    transition:transform .12s var(--ease), filter .15s; box-shadow:0 10px 30px -12px var(--glow);
+  }
+  button.dl:hover{ filter:brightness(1.06); transform:translateY(-1px) }
+  button.dl:active{ transform:translateY(1px) }
+  button.dl.ok{ animation:okPulse .6s var(--ease) }
+  button.ghost{
+    font-family:var(--sans); font-weight:500; font-size:14px;
+    background:transparent; color:var(--ink); border:1px solid var(--line-2);
+    border-radius:11px; padding:12px 20px; cursor:pointer; transition:border-color .15s, transform .12s var(--ease);
+  }
+  button.ghost:hover{ border-color:var(--amber); transform:translateY(-1px) }
+  .note{ font-size:12.5px; color:var(--muted); margin-left:auto; font-family:var(--mono) }
+  .note b{ color:var(--teal); font-weight:600 }
+
+  /* ---- preview ---- */
+  .preview{ margin-top:34px; display:none }
+  .preview.show{ display:block; animation:riseIn .5s var(--ease) both }
+  .preview h3{ font-size:11px; color:var(--faint); font-weight:500; margin:0 0 12px; font-family:var(--mono); letter-spacing:.14em; text-transform:uppercase }
+  .tbl-scroll{ overflow:auto; border:1px solid var(--line); border-radius:14px; max-height:430px; background:var(--panel) }
+  table{ border-collapse:collapse; width:100%; font-size:12.5px; white-space:nowrap }
+  thead th{ position:sticky; top:0; background:var(--panel-2); color:var(--muted); text-align:left; padding:11px 14px; font-weight:500; font-family:var(--mono); font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; border-bottom:1px solid var(--line) }
+  tbody td{ padding:9px 14px; border-bottom:1px solid var(--line); color:var(--ink); font-variant-numeric:tabular-nums }
+  tbody tr{ animation:fadeIn .3s ease both }
+  tbody tr:nth-child(even){ background:rgba(255,255,255,.018) }
+  tbody tr:hover{ background:rgba(242,171,62,.05) }
+  tbody td:nth-child(1),tbody td:nth-child(4),tbody td:nth-child(5),tbody td:nth-child(6){ font-family:var(--mono); color:var(--teal) }
+
+  .err{ margin-top:22px; padding:14px 16px; border-radius:11px; background:rgba(227,128,95,.1); border:1px solid rgba(227,128,95,.4); color:#f0a589; font-size:14px; display:none }
+  .err.show{ display:block; animation:riseIn .4s var(--ease) both }
+
+  footer{ margin-top:50px; padding-top:20px; border-top:1px solid var(--line); color:var(--faint); font-size:11px; font-family:var(--mono); letter-spacing:.05em; line-height:1.9 }
+  footer b{ color:var(--muted); font-weight:500 }
+
+  @media (max-width:640px){
+    .gauge{ grid-template-columns:repeat(2,1fr) }
+    .cell:nth-child(3){ border-right:none }
+    .cell:nth-child(2),.cell:nth-child(3){ border-bottom:1px solid var(--line) }
+    .note{ margin-left:0; width:100% }
+  }
+  @media (prefers-reduced-motion:reduce){
+    *{ animation:none !important; transition:none !important }
+    .cell{ opacity:1 !important }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brandrow anim d1">
+      <span class="mark">◆</span> Exotic · Lead Pipeline
+      <span class="sep"></span>
+      <span class="chip">IST · Client-side</span>
+    </div>
+    <h1 class="anim d2">Exotic Lead <span class="hl">Refinery</span></h1>
+    <p class="sub anim d3">Drop a raw lead export and pull out a cleaned, de-duplicated, IST-sorted stream. It filters to the Exotic campaign set, splits country codes, and maps each <code>form_id.slug</code> to its platform — all inside your browser.</p>
+  </header>
+
+  <label class="reticle anim d4" id="drop">
+    <span class="tick tl"></span><span class="tick tr"></span><span class="tick bl"></span><span class="tick br"></span>
+    <div class="glyph">↑</div>
+    <h2>Drop your export CSV here</h2>
+    <p>or click to choose a file — nothing is uploaded anywhere</p>
+    <div class="fname" id="fname"></div>
+    <div class="scan"></div>
+    <input type="file" id="file" accept=".csv,text/csv" />
+  </label>
+
+  <div class="err" id="err"></div>
+
+  <section class="pipe" id="pipe">
+    <div class="gauge">
+      <div class="flow"></div>
+      <div class="cell" data-i="0"><div class="lab">Rows in</div><div class="num" id="s-in">0</div><div class="meter"><span id="m-in"></span></div><div class="arrow">›</div></div>
+      <div class="cell k" data-i="1"><div class="lab">After Exotic filter</div><div class="num" id="s-filt">0</div><div class="meter"><span id="m-filt"></span></div><div class="delta" id="d-filt"></div><div class="arrow">›</div></div>
+      <div class="cell k" data-i="2"><div class="lab">After dedup</div><div class="num" id="s-dedup">0</div><div class="meter"><span id="m-dedup"></span></div><div class="delta" id="d-dedup"></div><div class="arrow">›</div></div>
+      <div class="cell final" data-i="3"><div class="lab">Rows out</div><div class="num" id="s-out">0</div><div class="meter"><span id="m-out"></span></div></div>
+    </div>
+
+    <div class="actionbar">
+      <button class="dl" id="download">Download cleaned CSV</button>
+      <button class="ghost" id="reset">Start over</button>
+      <span class="note" id="outname"></span>
+    </div>
+  </section>
+
+  <section class="preview" id="preview">
+    <h3 id="preview-h">Preview</h3>
+    <div class="tbl-scroll"><table id="tbl"></table></div>
+  </section>
+
+  <footer>
+    <b>Pipeline</b> &nbsp;UTC → IST · DD-MM-YYYY H.MM &nbsp;//&nbsp; phone → country code + national number &nbsp;//&nbsp; slug → platform &nbsp;//&nbsp; dedup on first unique email + phone &nbsp;//&nbsp; sort ascending by time
+  </footer>
+</div>
+
+<script>
+/* ---------- config: slug -> platform names (special cases) ---------- */
+const SLUG_PLATFORM = {
+  "ai-tools-1mg":"1Mg","ai-tools-apay1":"apay","ai-tools-bhim":"Bhim",
+  "ai-tools-bigbasket":"Bigbasket","ai-tools-blinkit":"Blinkit","ai-tools-bob":"Bob",
+  "ai-tools-cred":"Cred","ai-tools-googlepay":"Googlepay","ai-tools-gpay3":"Googlepay",
+  "ai-tools-ixg1":"Ixg","ai-tools-jiohotstar":"Jiohotstar","ai-tools-myjio":"Myjio",
+  "ai-tools-paytm":"Paytm","ai-tools-phonepe2":"Phonepe","ai-tools-rapido":"Rapido",
+  "ai-tools-share-1":"Share","ai-tools-swiggy":"Swiggy","ai-tools-swiggy4":"Swiggy",
+  "ai-tools-yt-bwm1":"Yt-Bwm","ai-tools-yt-bwm2":"Yt-Bwm","ai-tools-zepto":"Zepto",
+  "ai-tools-zepto2":"Zepto","ai-tools-zomato":"Zomato","ai-tools-zomato2":"Zomato",
+  "py-cred1":"Cred"
+};
+const OUT_HEADER = ["Date Created","name","email","phone_number","country_code",
+  "without country code","current_profession","experience_in_years",
+  "age_group","form_id.slug","Platform"];
+
+/* ---------- transforms (identical logic) ---------- */
+function derivePlatform(slug){
+  let b = slug;
+  for (const p of ["ai-tools-","py-"]){ if (b.startsWith(p)){ b = b.slice(p.length); break; } }
+  b = b.replace(/[0-9]+$/,"").replace(/-+$/,"");
+  if (!b) return slug;
+  return b.split(/[\s-]/).map(w => w ? w[0].toUpperCase()+w.slice(1) : w).join("-");
+}
+function convertDate(raw){
+  raw = (raw||"").trim();
+  if (!raw) return "";
+  const d = new Date(raw);
+  if (isNaN(d.getTime())) return raw;
+  const ist = new Date(d.getTime() + (5*60+30)*60000);
+  const dd = String(ist.getUTCDate()).padStart(2,"0");
+  const mm = String(ist.getUTCMonth()+1).padStart(2,"0");
+  const yy = ist.getUTCFullYear();
+  const h  = ist.getUTCHours();
+  const mi = String(ist.getUTCMinutes()).padStart(2,"0");
+  return `${dd}-${mm}-${yy} ${h}.${mi}`;
+}
+function splitPhone(raw){
+  const digits = (raw||"").replace(/\D/g,"");
+  if (!digits) return ["",""];
+  if (digits.length === 10) return ["91", digits];
+  try {
+    const pn = libphonenumber.parsePhoneNumberFromString("+"+digits);
+    if (pn && pn.isValid()) return [String(pn.countryCallingCode), String(pn.nationalNumber)];
+  } catch(e){}
+  const last10 = digits.slice(-10);
+  return ["91", last10 ? String(parseInt(last10,10)) : ""];
+}
+
+/* ---------- pipeline ---------- */
+function isExotic(slug){ return !!slug && (slug.startsWith("ai-tools") || slug === "py-cred1"); }
+function runPipeline(rows){
+  const data = rows.slice(1).filter(r => r && r.length >= 8);
+  data.sort((a,b) => (a[0]||"") < (b[0]||"") ? -1 : (a[0]||"") > (b[0]||"") ? 1 : 0);
+  const out = [];
+  const seenEmail = new Set(), seenPhone = new Set();
+  let totalIn = data.length, afterFilter = 0, dropSlug = 0, dropDup = 0;
+  for (const r of data){
+    const [dateRaw,name,email,phone,prof,exp,age,slug] = r;
+    let platform;
+    if (slug in SLUG_PLATFORM){ platform = SLUG_PLATFORM[slug]; }
+    else if (isExotic(slug)){ platform = derivePlatform(slug); }
+    else { dropSlug++; continue; }
+    afterFilter++;
+    const eKey = (email||"").trim().toLowerCase();
+    const pKey = (phone||"").trim();
+    if (seenEmail.has(eKey) || seenPhone.has(pKey)){ dropDup++; continue; }
+    seenEmail.add(eKey); seenPhone.add(pKey);
+    const [cc,wo] = splitPhone(phone);
+    out.push([
+      convertDate(dateRaw), name, email,
+      (phone||"").replace(/\D/g,""), cc, wo, prof, exp, age, slug, platform
+    ]);
+  }
+  return { out, totalIn, afterFilter, dropSlug, dropDup };
+}
+
+/* ---------- animation helpers ---------- */
+const reduceMotion = window.matchMedia("(prefers-reduced-motion:reduce)").matches;
+function animateCount(el, target, ms){
+  if (reduceMotion || target < 1){ el.textContent = Number(target).toLocaleString(); return; }
+  const start = performance.now();
+  const ease = t => 1 - Math.pow(1 - t, 3);
+  function step(now){
+    const t = Math.min(1, (now - start) / ms);
+    el.textContent = Math.round(target * ease(t)).toLocaleString();
+    if (t < 1) requestAnimationFrame(step);
+    else el.textContent = Number(target).toLocaleString();
+  }
+  requestAnimationFrame(step);
+}
+const wait = ms => new Promise(r => setTimeout(r, ms));
+
+/* ---------- UI wiring ---------- */
+const $ = id => document.getElementById(id);
+const drop=$("drop"), fileInput=$("file"), fname=$("fname"), err=$("err");
+let lastCSV="", lastName="Exotic_sorted_output.csv", currentRows=null;
+
+["dragenter","dragover"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add("drag");}));
+["dragleave","drop"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove("drag");}));
+drop.addEventListener("drop",e=>{ if(e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]); });
+fileInput.addEventListener("change",e=>{ if(e.target.files.length) handleFile(e.target.files[0]); });
+$("reset").addEventListener("click",resetAll);
+$("download").addEventListener("click",e=>{
+  const blob=new Blob([lastCSV],{type:"text/csv;charset=utf-8;"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob); a.download=lastName; a.click();
+  URL.revokeObjectURL(a.href);
+  e.currentTarget.classList.remove("ok"); void e.currentTarget.offsetWidth; e.currentTarget.classList.add("ok");
+});
+
+function showErr(msg){ err.textContent=msg; err.classList.add("show"); drop.classList.remove("busy"); }
+function clearErr(){ err.classList.remove("show"); }
+
+function handleFile(file){
+  clearErr();
+  fname.textContent = file.name;
+  lastName = file.name.replace(/\.csv$/i,"") + "_exotic_sorted.csv";
+  drop.classList.add("busy");
+  Papa.parse(file,{
+    skipEmptyLines:"greedy",
+    complete:res=>{
+      const rows=res.data;
+      if(!rows.length){ showErr("That file looks empty."); return; }
+      const head=(rows[0]||[]).map(s=>(s||"").trim().toLowerCase());
+      if(!head.includes("form_id.slug") || !head.includes("phone_number")){
+        showErr("Unexpected columns. Expected a lead export with date_created, name, email, phone_number, current_profession, experience_in_years, age_group, form_id.slug.");
+        return;
+      }
+      currentRows=rows; process(rows);
+    },
+    error:e=>showErr("Could not read the file: "+e.message)
+  });
+}
+
+async function process(rows){
+  if(!reduceMotion) await wait(420);
+  drop.classList.remove("busy");
+
+  const r=runPipeline(rows);
+  lastCSV=Papa.unparse([OUT_HEADER,...r.out],{newline:"\r\n"});
+
+  document.querySelectorAll(".cell").forEach(s=>s.classList.remove("in","counting","done"));
+  ["m-in","m-filt","m-dedup","m-out"].forEach(id=>$(id).style.width="0%");
+  $("d-filt").textContent = r.dropSlug ? `−${r.dropSlug.toLocaleString()} non-Exotic` : "";
+  $("d-dedup").textContent = r.dropDup ? `−${r.dropDup.toLocaleString()} duplicates` : "";
+  $("outname").innerHTML = `<b>${r.out.length.toLocaleString()}</b> rows · ${lastName}`;
+
+  $("pipe").classList.add("show");
+  const pipe=$("pipe"); pipe.classList.remove("run"); void pipe.offsetWidth; pipe.classList.add("run");
+
+  const base = Math.max(1, r.totalIn);
+  const vals = [r.totalIn, r.afterFilter, r.out.length, r.out.length];
+  const nums = ["s-in","s-filt","s-dedup","s-out"];
+  const mets = ["m-in","m-filt","m-dedup","m-out"];
+  const cells=[...document.querySelectorAll(".cell")];
+  const stepDelay = reduceMotion ? 0 : 150;
+  for(let i=0;i<cells.length;i++){
+    cells[i].classList.add("in","counting");
+    animateCount($(nums[i]), vals[i], reduceMotion?0:900);
+    requestAnimationFrame(()=>{ $(mets[i]).style.width = Math.round(100*vals[i]/base)+"%"; });
+    if(i===cells.length-1) cells[i].classList.add("done");
+    if(stepDelay) await wait(stepDelay);
+  }
+  buildPreview(r.out);
+}
+
+function buildPreview(out){
+  const tbl=$("tbl");
+  const head="<thead><tr>"+OUT_HEADER.map(h=>`<th>${h}</th>`).join("")+"</tr></thead>";
+  const slice=out.slice(0,50);
+  const body="<tbody>"+slice.map((r,i)=>`<tr style="animation-delay:${Math.min(i*18,500)}ms">`+r.map(c=>`<td>${escapeHtml(c)}</td>`).join("")+"</tr>").join("")+"</tbody>";
+  tbl.innerHTML=head+body;
+  $("preview-h").textContent=`Preview · first ${slice.length} of ${out.length.toLocaleString()} rows`;
+  $("preview").classList.add("show");
+}
+function escapeHtml(s){ return String(s??"").replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c])); }
+
+function resetAll(){
+  currentRows=null; lastCSV=""; fileInput.value="";
+  fname.textContent=""; clearErr(); drop.classList.remove("busy");
+  $("pipe").classList.remove("show","run");
+  $("preview").classList.remove("show");
+}
+</script>
+</body>
+</html>
