@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/libphonenumber-js@1.11.4/bundle/libphonenumber-js.max.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/libphonenumber-js@1.11.4/bundle/libphonenumber-max.js"></script>
 <style>
   :root{
     --bg:#14141b; --bg-soft:#191a22; --panel:#1d1e28; --panel-2:#23242f;
@@ -354,6 +354,10 @@ function clearErr(){ err.classList.remove("show"); }
 
 function handleFile(file){
   clearErr();
+  if (typeof libphonenumber === "undefined" || !libphonenumber.parsePhoneNumberFromString){
+    showErr("The phone-parsing library didn't load (check your internet connection and reload). Country codes can't be detected without it, so processing is paused to avoid mislabeling numbers.");
+    return;
+  }
   fname.textContent = file.name;
   lastName = file.name.replace(/\.csv$/i,"") + "_exotic_sorted.csv";
   drop.classList.add("busy");
