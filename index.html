@@ -11,173 +11,190 @@
 <script src="https://cdn.jsdelivr.net/npm/libphonenumber-js@1.11.4/bundle/libphonenumber-max.js"></script>
 <style>
   :root{
-    --bg:#14141b; --bg-soft:#191a22; --panel:#1d1e28; --panel-2:#23242f;
-    --line:rgba(255,255,255,.085); --line-2:rgba(255,255,255,.15);
-    --ink:#ece9e2; --muted:#8b909f; --faint:#5b6072;
-    --amber:#f2ab3e; --amber-deep:#c9842a; --amber-ink:#1a1206;
-    --teal:#46cdb8; --clay:#e3805f;
-    --glow:rgba(242,171,62,.14);
+    --bg:#111119; --bg-soft:#171821; --panel:#1c1d28; --panel-2:#23242f;
+    --line:rgba(255,255,255,.085); --line-2:rgba(255,255,255,.16);
+    --ink:#eeeae2; --muted:#8b909f; --faint:#5b6072; --clay:#e3805f;
     --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
     --sans:"Space Grotesk",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
     --ease:cubic-bezier(.22,.61,.36,1);
+    --spring:cubic-bezier(.34,1.56,.64,1);
+    /* accent duo (overridden per theme) */
+    --amber:#f2ab3e; --amber-deep:#c9842a; --amber-ink:#17130a; --teal:#46cdb8;
+    --glow:rgba(242,171,62,.16); --glow2:rgba(70,205,184,.14);
   }
+  body[data-theme="ember"]{ --amber:#f2ab3e; --amber-deep:#c9842a; --teal:#46cdb8; --glow:rgba(242,171,62,.16); --glow2:rgba(70,205,184,.14); }
+  body[data-theme="iris"] { --amber:#a78bfa; --amber-deep:#7c5cf0; --teal:#38e0d0; --glow:rgba(167,139,250,.20); --glow2:rgba(56,224,208,.14); }
+  body[data-theme="volt"] { --amber:#4fd6e6; --amber-deep:#2bb6c6; --teal:#a3e635; --glow:rgba(79,214,230,.18); --glow2:rgba(163,230,53,.14); }
+
   *{box-sizing:border-box}
   html,body{margin:0}
   body{
     font-family:var(--sans); background:var(--bg); color:var(--ink);
     line-height:1.5; -webkit-font-smoothing:antialiased; padding:46px 20px 70px;
-    overflow-x:hidden; position:relative;
+    overflow-x:hidden; position:relative; min-height:100vh;
   }
-  /* engineering grid + warm glow */
+  /* ---- living background: aurora blobs + grid ---- */
+  .fx{ position:fixed; inset:0; z-index:0; pointer-events:none; overflow:hidden }
+  .fx .blob{ position:absolute; border-radius:50%; filter:blur(70px); opacity:.5; mix-blend-mode:screen }
+  .fx .b1{ width:620px;height:620px; background:radial-gradient(circle,var(--amber),transparent 62%); top:-220px; left:8%; animation:drift1 26s var(--ease) infinite alternate }
+  .fx .b2{ width:560px;height:560px; background:radial-gradient(circle,var(--teal),transparent 62%); top:-160px; right:6%; animation:drift2 30s var(--ease) infinite alternate }
+  .fx .b3{ width:520px;height:520px; background:radial-gradient(circle,var(--amber-deep),transparent 65%); top:34%; left:38%; opacity:.28; animation:drift3 34s var(--ease) infinite alternate }
+  @keyframes drift1{ to{ transform:translate(120px,60px) scale(1.15) } }
+  @keyframes drift2{ to{ transform:translate(-140px,40px) scale(1.1) } }
+  @keyframes drift3{ to{ transform:translate(80px,-60px) scale(1.2) } }
   body::before{
     content:""; position:fixed; inset:0; z-index:0; pointer-events:none;
     background-image:
-      linear-gradient(rgba(255,255,255,.022) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255,255,255,.022) 1px, transparent 1px);
+      linear-gradient(rgba(255,255,255,.02) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.02) 1px, transparent 1px);
     background-size:48px 48px;
-    -webkit-mask:radial-gradient(120% 70% at 50% -8%, #000 0%, transparent 72%);
-            mask:radial-gradient(120% 70% at 50% -8%, #000 0%, transparent 72%);
-  }
-  body::after{
-    content:""; position:fixed; top:-260px; left:50%; transform:translateX(-50%);
-    width:980px; height:560px; z-index:0; pointer-events:none; filter:blur(8px);
-    background:radial-gradient(ellipse at center, var(--glow), transparent 70%);
+    -webkit-mask:radial-gradient(130% 80% at 50% -10%, #000 0%, transparent 74%);
+            mask:radial-gradient(130% 80% at 50% -10%, #000 0%, transparent 74%);
   }
   .wrap{ max-width:940px; margin:0 auto; position:relative; z-index:1 }
 
-  /* ---- motion ---- */
-  @keyframes riseIn{ from{opacity:0; transform:translateY(16px)} to{opacity:1; transform:none} }
+  /* ---- motion primitives ---- */
+  @keyframes riseIn{ from{opacity:0; transform:translateY(18px)} to{opacity:1; transform:none} }
   @keyframes fadeIn{ from{opacity:0} to{opacity:1} }
-  @keyframes popNum{ 0%{transform:scale(.92)} 60%{transform:scale(1.045)} 100%{transform:scale(1)} }
+  @keyframes popNum{ 0%{transform:scale(.9)} 55%{transform:scale(1.06)} 100%{transform:scale(1)} }
   @keyframes shimmer{ 0%{background-position:-180% 0} 100%{background-position:180% 0} }
-  @keyframes flowDot{ 0%{left:-8%; opacity:0} 12%{opacity:1} 88%{opacity:1} 100%{left:106%; opacity:0} }
   @keyframes spin{ to{transform:rotate(360deg)} }
   @keyframes glowPulse{ 0%,100%{opacity:.5} 50%{opacity:1} }
-  @keyframes okPulse{ 0%{box-shadow:0 0 0 0 rgba(70,205,184,.4)} 100%{box-shadow:0 0 0 16px rgba(70,205,184,0)} }
-  .anim{ animation:riseIn .6s var(--ease) both }
+  @keyframes titleShimmer{ 0%,100%{background-position:0 0} 50%{background-position:100% 0} }
+  @keyframes floatY{ 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+  @keyframes sweepDown{ 0%{top:-10%; opacity:0} 15%{opacity:.9} 85%{opacity:.9} 100%{top:110%; opacity:0} }
+  @keyframes stream{ 0%{left:-8%} 100%{left:108%} }
+  @keyframes tickPulse{ 0%,100%{opacity:.55} 50%{opacity:1} }
+  @keyframes btnGlow{ 0%,100%{box-shadow:0 10px 30px -12px var(--glow)} 50%{box-shadow:0 12px 40px -10px var(--glow)} }
+  @keyframes okPulse{ 0%{box-shadow:0 0 0 0 var(--glow2)} 100%{box-shadow:0 0 0 20px rgba(0,0,0,0)} }
+  @keyframes spark{ 0%{opacity:1; transform:translate(0,0) scale(1)} 100%{opacity:0; transform:translate(var(--dx),var(--dy)) scale(.25)} }
+  .anim{ animation:riseIn .7s var(--ease) both }
   .d1{animation-delay:.04s}.d2{animation-delay:.12s}.d3{animation-delay:.2s}.d4{animation-delay:.28s}
 
   /* ---- header ---- */
   header.top{ margin-bottom:32px }
-  .brandrow{
-    display:flex; align-items:center; gap:12px; margin-bottom:18px;
-    font-family:var(--mono); font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--muted);
-  }
-  .brandrow .mark{ color:var(--amber); font-size:13px; transform:translateY(.5px); animation:glowPulse 3.4s ease-in-out infinite }
+  .brandrow{ display:flex; align-items:center; gap:12px; margin-bottom:18px;
+    font-family:var(--mono); font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--muted) }
+  .brandrow .mark{ color:var(--amber); font-size:13px; animation:glowPulse 3.2s ease-in-out infinite }
   .brandrow .sep{ flex:1; height:1px; background:linear-gradient(90deg,var(--line-2),transparent) }
-  .brandrow .chip{
-    border:1px solid var(--line); border-radius:20px; padding:3px 11px; color:var(--faint);
-    letter-spacing:.12em;
-  }
-  h1{ font-size:clamp(32px,6vw,52px); line-height:1.02; margin:0 0 12px; letter-spacing:-.025em; font-weight:700 }
-  h1 .hl{ color:var(--amber); position:relative }
+  .themes{ display:flex; gap:7px; align-items:center }
+  .dot{ width:15px;height:15px;border-radius:50%; border:2px solid transparent; background:var(--c); cursor:pointer; padding:0;
+    transition:transform .18s var(--spring), box-shadow .2s; box-shadow:0 0 0 1px rgba(255,255,255,.15) inset }
+  .dot:hover{ transform:scale(1.18) }
+  .dot.on{ border-color:#fff; box-shadow:0 0 12px var(--c) }
+  .chip{ font-family:var(--mono); border:1px solid var(--line); border-radius:20px; padding:3px 11px; color:var(--faint); letter-spacing:.12em }
+  h1{ font-size:clamp(32px,6vw,54px); line-height:1.02; margin:0 0 12px; letter-spacing:-.025em; font-weight:700 }
+  h1 .hl{ background:linear-gradient(100deg, var(--amber) 18%, #ffffff 50%, var(--amber) 82%); background-size:220% 100%;
+    -webkit-background-clip:text; background-clip:text; color:transparent; animation:titleShimmer 6.5s ease-in-out infinite }
   .sub{ color:var(--muted); max-width:62ch; margin:0; font-size:15.5px }
   .sub code{ font-family:var(--mono); font-size:.84em; color:var(--ink); background:rgba(255,255,255,.06); border:1px solid var(--line); padding:1px 6px; border-radius:5px }
 
   /* ---- reticle / scanner drop target ---- */
-  .reticle{
-    display:block; position:relative; overflow:hidden;
-    margin-top:30px; border:1px solid var(--line); border-radius:16px;
-    background:linear-gradient(180deg, var(--panel), var(--bg-soft));
-    padding:52px 24px; text-align:center; cursor:pointer;
-    transition:border-color .2s var(--ease), transform .2s var(--ease), box-shadow .2s var(--ease);
-  }
-  .reticle:hover{ transform:translateY(-2px); border-color:var(--line-2); box-shadow:0 24px 60px -34px rgba(0,0,0,.7) }
-  .reticle.drag{ border-color:var(--amber); box-shadow:0 0 0 1px var(--amber) inset, 0 24px 60px -30px var(--glow) }
-  .reticle .tick{ position:absolute; width:16px; height:16px; border:2px solid var(--amber); opacity:.65; transition:opacity .2s, width .2s, height .2s }
-  .reticle:hover .tick, .reticle.drag .tick{ opacity:1; width:20px; height:20px }
-  .tick.tl{ top:14px; left:14px; border-right:0; border-bottom:0; border-radius:5px 0 0 0 }
-  .tick.tr{ top:14px; right:14px; border-left:0; border-bottom:0; border-radius:0 5px 0 0 }
-  .tick.bl{ bottom:14px; left:14px; border-right:0; border-top:0; border-radius:0 0 0 5px }
-  .tick.br{ bottom:14px; right:14px; border-left:0; border-top:0; border-radius:0 0 5px 0 }
-  .glyph{
-    width:54px;height:54px;border-radius:14px;margin:0 auto 16px;
+  .reticle{ display:block; position:relative; overflow:hidden;
+    margin-top:30px; border:1px solid var(--line); border-radius:18px;
+    background:linear-gradient(180deg, rgba(28,29,40,.82), rgba(23,24,33,.82)); backdrop-filter:blur(6px);
+    padding:54px 24px; text-align:center; cursor:pointer;
+    transition:border-color .22s var(--ease), transform .22s var(--ease), box-shadow .22s var(--ease) }
+  .reticle:hover{ transform:translateY(-3px); border-color:var(--line-2); box-shadow:0 30px 70px -38px rgba(0,0,0,.75) }
+  .reticle.drag{ border-color:var(--amber); box-shadow:0 0 0 1px var(--amber) inset, 0 30px 70px -30px var(--glow) }
+  .reticle .tick{ position:absolute; width:16px; height:16px; border:2px solid var(--amber); animation:tickPulse 3s ease-in-out infinite; transition:width .2s, height .2s }
+  .reticle:hover .tick, .reticle.drag .tick{ width:22px; height:22px; opacity:1 }
+  .tick.tl{ top:14px; left:14px; border-right:0; border-bottom:0; border-radius:6px 0 0 0 }
+  .tick.tr{ top:14px; right:14px; border-left:0; border-bottom:0; border-radius:0 6px 0 0; animation-delay:.4s }
+  .tick.bl{ bottom:14px; left:14px; border-right:0; border-top:0; border-radius:0 0 0 6px; animation-delay:.8s }
+  .tick.br{ bottom:14px; right:14px; border-left:0; border-top:0; border-radius:0 0 6px 0; animation-delay:1.2s }
+  .reticle .sweep{ position:absolute; left:8%; right:8%; top:-10%; height:64px; pointer-events:none;
+    background:linear-gradient(180deg, transparent, var(--glow), transparent); animation:sweepDown 4.4s var(--ease) infinite }
+  .glyph{ position:relative; z-index:1; width:56px;height:56px;border-radius:15px;margin:0 auto 16px;
     display:grid;place-items:center;background:var(--amber);color:var(--amber-ink);
-    font-size:23px;font-weight:700; box-shadow:0 10px 30px -10px var(--glow);
-    transition:transform .25s var(--ease);
-  }
-  .reticle:hover .glyph{ transform:translateY(-3px) }
+    font-size:24px;font-weight:700; box-shadow:0 12px 34px -10px var(--glow); animation:floatY 4.5s ease-in-out infinite;
+    transition:transform .25s var(--spring) }
+  .reticle:hover .glyph{ transform:translateY(-4px) scale(1.05) }
   .reticle.busy .glyph{ animation:spin 1s linear infinite }
-  .reticle h2{ font-size:19px; margin:0 0 5px; font-weight:600; letter-spacing:-.01em }
-  .reticle p{ margin:0; color:var(--muted); font-size:14px }
-  .reticle .fname{ font-family:var(--mono); font-size:12.5px; color:var(--teal); margin-top:10px }
+  .reticle h2{ position:relative; z-index:1; font-size:19px; margin:0 0 5px; font-weight:600; letter-spacing:-.01em }
+  .reticle p{ position:relative; z-index:1; margin:0; color:var(--muted); font-size:14px }
+  .reticle .fname{ position:relative; z-index:1; font-family:var(--mono); font-size:12.5px; color:var(--teal); margin-top:10px }
   .reticle .scan{ position:absolute; left:0; right:0; bottom:0; height:2px; overflow:hidden; opacity:0 }
   .reticle.busy .scan{ opacity:1 }
-  .reticle .scan::before{ content:""; position:absolute; inset:0; background:linear-gradient(90deg,transparent,var(--amber),transparent); background-size:180% 100%; animation:shimmer 1s linear infinite }
+  .reticle .scan::before{ content:""; position:absolute; inset:0; background:linear-gradient(90deg,transparent,var(--amber),transparent); background-size:180% 100%; animation:shimmer .9s linear infinite }
   input[type=file]{ display:none }
 
   /* ---- gauge cluster (funnel) ---- */
   .pipe{ margin-top:34px; display:none }
   .pipe.show{ display:block }
-  .gauge{
-    position:relative; display:grid; grid-template-columns:repeat(4,1fr);
-    border:1px solid var(--line); border-radius:16px; overflow:hidden;
-    background:linear-gradient(180deg,var(--panel),var(--bg-soft));
-    box-shadow:0 30px 70px -50px #000;
-  }
-  .gauge .flow{ position:absolute; top:0; height:2px; width:64px; left:-8%; background:linear-gradient(90deg,transparent,var(--amber),transparent); pointer-events:none; opacity:0; filter:drop-shadow(0 0 6px var(--amber)) }
-  .pipe.run .flow{ animation:flowDot 1.7s var(--ease) .2s 1 }
+  .gauge{ position:relative; display:grid; grid-template-columns:repeat(4,1fr);
+    border:1px solid var(--line); border-radius:18px; overflow:hidden;
+    background:linear-gradient(180deg, rgba(28,29,40,.86), rgba(23,24,33,.86)); backdrop-filter:blur(6px);
+    box-shadow:0 34px 80px -54px #000 }
+  .gauge .stream{ position:absolute; inset:0 0 auto 0; height:2px; overflow:hidden; pointer-events:none }
+  .gauge .stream i{ position:absolute; top:0; left:-8%; width:38px; height:2px; border-radius:2px;
+    background:linear-gradient(90deg,transparent,var(--amber),transparent); opacity:.45; animation:stream 3.4s linear infinite }
+  .gauge .stream i:nth-child(2){ animation-delay:1.15s; opacity:.3 }
+  .gauge .stream i:nth-child(3){ animation-delay:2.3s; opacity:.22 }
   .cell{ padding:22px 20px; position:relative; border-right:1px solid var(--line); opacity:0 }
-  .cell.in{ animation:riseIn .5s var(--ease) both }
+  .cell.in{ animation:riseIn .55s var(--spring) both }
   .cell:last-child{ border-right:none }
   .cell .lab{ font-family:var(--mono); font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:var(--faint); margin-bottom:10px }
   .cell .num{ font-family:var(--mono); font-size:31px; font-weight:600; letter-spacing:-.02em; line-height:1; color:var(--ink); font-variant-numeric:tabular-nums }
-  .cell.counting .num{ animation:popNum .4s var(--ease) }
+  .cell.counting .num{ animation:popNum .45s var(--spring) }
   .cell .meter{ height:3px; margin-top:14px; border-radius:3px; background:rgba(255,255,255,.07); overflow:hidden }
-  .cell .meter > span{ display:block; height:100%; width:0; border-radius:3px; transition:width .9s var(--ease); background:var(--amber) }
-  .cell.k .meter > span{ background:var(--teal) }
+  .cell .meter > span{ display:block; height:100%; width:0; border-radius:3px; transition:width 1s var(--spring); background:var(--amber); box-shadow:0 0 8px var(--glow) }
+  .cell.k .meter > span{ background:var(--teal); box-shadow:0 0 8px var(--glow2) }
   .cell .delta{ font-family:var(--mono); font-size:11.5px; margin-top:10px; color:var(--clay); opacity:0 }
-  .cell.in .delta{ animation:fadeIn .4s ease .35s both }
-  .cell.final{ background:linear-gradient(180deg, rgba(70,205,184,.07), rgba(70,205,184,.02)) }
+  .cell.in .delta{ animation:fadeIn .4s ease .4s both }
+  .cell.final{ background:linear-gradient(180deg, rgba(70,205,184,.08), rgba(70,205,184,.02)) }
   .cell.final .num{ color:var(--teal) }
-  .cell.final.done .num{ display:inline-block; animation:popNum .4s var(--ease) }
-  .cell .arrow{
-    position:absolute; right:-10px; top:50%; transform:translateY(-50%); width:20px;height:20px;border-radius:50%;
-    background:var(--bg-soft); border:1px solid var(--line); display:grid;place-items:center; z-index:2; color:var(--amber); font-size:11px;
-  }
+  .cell.final.done .num{ display:inline-block; animation:popNum .45s var(--spring) }
+  .cell .arrow{ position:absolute; right:-10px; top:50%; transform:translateY(-50%); width:20px;height:20px;border-radius:50%;
+    background:var(--bg-soft); border:1px solid var(--line); display:grid;place-items:center; z-index:2; color:var(--amber); font-size:11px }
   .cell:last-child .arrow{ display:none }
 
   .actionbar{ display:flex; flex-wrap:wrap; gap:12px; align-items:center; margin-top:24px }
-  button.dl{
+  button.dl{ position:relative; overflow:hidden;
     font-family:var(--sans); font-weight:600; font-size:15px;
-    background:var(--amber); color:var(--amber-ink); border:none; border-radius:11px;
+    background:var(--amber); color:var(--amber-ink); border:none; border-radius:12px;
     padding:13px 24px; cursor:pointer; letter-spacing:.005em;
-    transition:transform .12s var(--ease), filter .15s; box-shadow:0 10px 30px -12px var(--glow);
-  }
-  button.dl:hover{ filter:brightness(1.06); transform:translateY(-1px) }
+    transition:transform .12s var(--spring), filter .15s; animation:btnGlow 3.4s ease-in-out infinite }
+  button.dl::after{ content:""; position:absolute; top:0; left:-120%; width:60%; height:100%;
+    background:linear-gradient(100deg, transparent, rgba(255,255,255,.5), transparent); transform:skewX(-18deg); transition:none }
+  button.dl:hover::after{ animation:shimmer 0s; left:120%; transition:left .7s var(--ease) }
+  button.dl:hover{ filter:brightness(1.07); transform:translateY(-1px) }
   button.dl:active{ transform:translateY(1px) }
-  button.dl.ok{ animation:okPulse .6s var(--ease) }
-  button.ghost{
-    font-family:var(--sans); font-weight:500; font-size:14px;
+  button.dl.ok{ animation:okPulse .7s var(--ease) }
+  button.ghost{ font-family:var(--sans); font-weight:500; font-size:14px;
     background:transparent; color:var(--ink); border:1px solid var(--line-2);
-    border-radius:11px; padding:12px 20px; cursor:pointer; transition:border-color .15s, transform .12s var(--ease);
-  }
+    border-radius:12px; padding:12px 20px; cursor:pointer; transition:border-color .15s, transform .12s var(--spring) }
   button.ghost:hover{ border-color:var(--amber); transform:translateY(-1px) }
   .note{ font-size:12.5px; color:var(--muted); margin-left:auto; font-family:var(--mono) }
   .note b{ color:var(--teal); font-weight:600 }
 
   /* ---- preview ---- */
   .preview{ margin-top:34px; display:none }
-  .preview.show{ display:block; animation:riseIn .5s var(--ease) both }
+  .preview.show{ display:block; animation:riseIn .55s var(--ease) both }
   .preview h3{ font-size:11px; color:var(--faint); font-weight:500; margin:0 0 12px; font-family:var(--mono); letter-spacing:.14em; text-transform:uppercase }
-  .tbl-scroll{ overflow:auto; border:1px solid var(--line); border-radius:14px; max-height:430px; background:var(--panel) }
+  .tbl-scroll{ overflow:auto; border:1px solid var(--line); border-radius:14px; max-height:430px; background:rgba(28,29,40,.7); backdrop-filter:blur(6px) }
   table{ border-collapse:collapse; width:100%; font-size:12.5px; white-space:nowrap }
   thead th{ position:sticky; top:0; background:var(--panel-2); color:var(--muted); text-align:left; padding:11px 14px; font-weight:500; font-family:var(--mono); font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; border-bottom:1px solid var(--line) }
   tbody td{ padding:9px 14px; border-bottom:1px solid var(--line); color:var(--ink); font-variant-numeric:tabular-nums }
-  tbody tr{ animation:fadeIn .3s ease both }
+  tbody tr{ animation:fadeIn .34s ease both }
   tbody tr:nth-child(even){ background:rgba(255,255,255,.018) }
-  tbody tr:hover{ background:rgba(242,171,62,.05) }
-  tbody td:nth-child(1),tbody td:nth-child(4),tbody td:nth-child(5),tbody td:nth-child(6){ font-family:var(--mono); color:var(--teal) }
+  tbody tr:hover{ background:var(--glow) }
+  tbody td:nth-child(1),tbody td:nth-child(2),tbody td:nth-child(5),tbody td:nth-child(6),tbody td:nth-child(7){ font-family:var(--mono); color:var(--teal) }
 
-  .err{ margin-top:22px; padding:14px 16px; border-radius:11px; background:rgba(227,128,95,.1); border:1px solid rgba(227,128,95,.4); color:#f0a589; font-size:14px; display:none }
+  .err{ margin-top:22px; padding:14px 16px; border-radius:12px; background:rgba(227,128,95,.1); border:1px solid rgba(227,128,95,.4); color:#f0a589; font-size:14px; display:none }
   .err.show{ display:block; animation:riseIn .4s var(--ease) both }
 
   footer{ margin-top:50px; padding-top:20px; border-top:1px solid var(--line); color:var(--faint); font-size:11px; font-family:var(--mono); letter-spacing:.05em; line-height:1.9 }
   footer b{ color:var(--muted); font-weight:500 }
 
+  /* spark burst */
+  .burst{ position:fixed; inset:0; pointer-events:none; z-index:70 }
+  .burst i{ position:absolute; width:7px;height:7px;margin:-3.5px 0 0 -3.5px;border-radius:50%;
+    background:var(--teal); box-shadow:0 0 10px var(--teal); opacity:0; animation:spark 1s var(--ease) forwards }
+  .burst i.a{ background:var(--amber); box-shadow:0 0 10px var(--amber) }
+
   @media (max-width:640px){
     .gauge{ grid-template-columns:repeat(2,1fr) }
-    .cell:nth-child(3){ border-right:none }
     .cell:nth-child(2),.cell:nth-child(3){ border-bottom:1px solid var(--line) }
     .note{ margin-left:0; width:100% }
   }
@@ -187,12 +204,19 @@
   }
 </style>
 </head>
-<body>
+<body data-theme="ember">
+<div class="fx"><span class="blob b1"></span><span class="blob b2"></span><span class="blob b3"></span></div>
+
 <div class="wrap">
   <header class="top">
     <div class="brandrow anim d1">
       <span class="mark">◆</span> Exotic · Lead Pipeline
       <span class="sep"></span>
+      <span class="themes" id="themes">
+        <button class="dot" data-t="ember" style="--c:#f2ab3e" title="Ember"></button>
+        <button class="dot" data-t="iris"  style="--c:#a78bfa" title="Iris"></button>
+        <button class="dot" data-t="volt"  style="--c:#4fd6e6" title="Volt"></button>
+      </span>
       <span class="chip">IST · Client-side</span>
     </div>
     <h1 class="anim d2">Exotic Lead <span class="hl">Refinery</span></h1>
@@ -201,6 +225,7 @@
 
   <label class="reticle anim d4" id="drop">
     <span class="tick tl"></span><span class="tick tr"></span><span class="tick bl"></span><span class="tick br"></span>
+    <span class="sweep"></span>
     <div class="glyph">↑</div>
     <h2>Drop your export CSV here</h2>
     <p>or click to choose a file — nothing is uploaded anywhere</p>
@@ -213,7 +238,7 @@
 
   <section class="pipe" id="pipe">
     <div class="gauge">
-      <div class="flow"></div>
+      <span class="stream"><i></i><i></i><i></i></span>
       <div class="cell" data-i="0"><div class="lab">Rows in</div><div class="num" id="s-in">0</div><div class="meter"><span id="m-in"></span></div><div class="arrow">›</div></div>
       <div class="cell k" data-i="1"><div class="lab">After Exotic filter</div><div class="num" id="s-filt">0</div><div class="meter"><span id="m-filt"></span></div><div class="delta" id="d-filt"></div><div class="arrow">›</div></div>
       <div class="cell k" data-i="2"><div class="lab">After dedup</div><div class="num" id="s-dedup">0</div><div class="meter"><span id="m-dedup"></span></div><div class="delta" id="d-dedup"></div><div class="arrow">›</div></div>
@@ -233,7 +258,7 @@
   </section>
 
   <footer>
-    <b>Pipeline</b> &nbsp;UTC → IST · DD-MM-YYYY H.MM &nbsp;//&nbsp; phone → country code + national number &nbsp;//&nbsp; slug → platform &nbsp;//&nbsp; dedup on first unique email + phone &nbsp;//&nbsp; sort ascending by time
+    <b>Pipeline</b> &nbsp;UTC → IST · DD-MM-YYYY H.MM &nbsp;//&nbsp; Day (1 Sun … 7 Sat) &nbsp;//&nbsp; phone → country code + national number &nbsp;//&nbsp; slug → platform &nbsp;//&nbsp; dedup on first unique email + phone &nbsp;//&nbsp; sort ascending
   </footer>
 </div>
 
@@ -248,26 +273,38 @@ const SLUG_PLATFORM = {
   "ai-tools-share-1":"Share","ai-tools-swiggy":"Swiggy","ai-tools-swiggy4":"Swiggy",
   "ai-tools-yt-bwm1":"Yt-Bwm","ai-tools-yt-bwm2":"Yt-Bwm","ai-tools-zepto":"Zepto",
   "ai-tools-zepto2":"Zepto","ai-tools-zomato":"Zomato","ai-tools-zomato2":"Zomato",
-  "py-cred1":"Cred"
+  // ai-bootcamp family
+  "ai-bootcamp":"Bootcamp","ai-bootcamp-1":"Bootcamp",
+  "ai-bootcamp-blinkit":"Blinkit","ai-bootcamp-zomato":"Zomato",
+  "ai-bootcamp-big-basket":"Bigbasket","ai-bootcamp-cred":"Cred",
+  "ai-bootcamp-googlepay":"Googlepay","ai-bootcamp-zepto":"Zepto",
+  "ai-bootcamp-swiggy":"Swiggy",
+  // py family
+  "py-cred1":"Cred","py-cred2":"Cred","py-cred3":"Cred","py-phonepe":"Phonepe"
 };
-const OUT_HEADER = ["Date Created","name","email","phone_number","country_code",
+const OUT_HEADER = ["Date Created","Day","name","email","phone_number","country_code",
   "without country code","current_profession","experience_in_years",
   "age_group","form_id.slug","Platform"];
 
 /* ---------- transforms (identical logic) ---------- */
 function derivePlatform(slug){
   let b = slug;
-  for (const p of ["ai-tools-","py-"]){ if (b.startsWith(p)){ b = b.slice(p.length); break; } }
+  for (const p of ["ai-tools-","ai-bootcamp-","py-"]){ if (b.startsWith(p)){ b = b.slice(p.length); break; } }
   b = b.replace(/[0-9]+$/,"").replace(/-+$/,"");
   if (!b) return slug;
   return b.split(/[\s-]/).map(w => w ? w[0].toUpperCase()+w.slice(1) : w).join("-");
 }
-function convertDate(raw){
+const DAYS = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];   // getUTCDay(): 0=Sun
+function toIST(raw){
   raw = (raw||"").trim();
-  if (!raw) return "";
+  if (!raw) return null;
   const d = new Date(raw);
-  if (isNaN(d.getTime())) return raw;
-  const ist = new Date(d.getTime() + (5*60+30)*60000);
+  if (isNaN(d.getTime())) return null;
+  return new Date(d.getTime() + (5*60+30)*60000);            // IST is fixed +5:30
+}
+function convertDate(raw){
+  const ist = toIST(raw);
+  if (!ist) return (raw||"").trim();
   const dd = String(ist.getUTCDate()).padStart(2,"0");
   const mm = String(ist.getUTCMonth()+1).padStart(2,"0");
   const yy = ist.getUTCFullYear();
@@ -275,20 +312,28 @@ function convertDate(raw){
   const mi = String(ist.getUTCMinutes()).padStart(2,"0");
   return `${dd}-${mm}-${yy} ${h}.${mi}`;
 }
+function dayOfWeek(raw){ const ist = toIST(raw); if(!ist) return ""; const i = ist.getUTCDay(); return (i+1)+" "+DAYS[i]; }
 function splitPhone(raw){
   const digits = (raw||"").replace(/\D/g,"");
   if (!digits) return ["",""];
-  if (digits.length === 10) return ["91", digits];
-  try {
-    const pn = libphonenumber.parsePhoneNumberFromString("+"+digits);
-    if (pn && pn.isValid()) return [String(pn.countryCallingCode), String(pn.nationalNumber)];
-  } catch(e){}
-  const last10 = digits.slice(-10);
-  return ["91", last10 ? String(parseInt(last10,10)) : ""];
+  let cc = "91", nat = null;                                 // default: assume India
+  if (digits.length !== 10){
+    try {
+      const pn = libphonenumber.parsePhoneNumberFromString("+"+digits);
+      if (pn && pn.countryCallingCode && pn.isPossible()){    // trust the country-code prefix for any plausible-length number
+        cc = String(pn.countryCallingCode);
+        nat = String(pn.nationalNumber);
+      }
+    } catch(e){}
+  }
+  if (cc === "91") nat = digits.slice(-10);                   // Indian numbers are 10 digits -> RIGHT(phone, 10)
+  return [cc, nat];
 }
 
 /* ---------- pipeline ---------- */
-function isExotic(slug){ return !!slug && (slug.startsWith("ai-tools") || slug === "py-cred1"); }
+// Campaign families to KEEP. Add more prefixes here anytime.
+const KEEP_PREFIXES = ["ai-tools", "ai-bootcamp", "py"];
+function isExotic(slug){ return !!slug && KEEP_PREFIXES.some(p => slug.startsWith(p)); }
 function runPipeline(rows){
   const data = rows.slice(1).filter(r => r && r.length >= 8);
   data.sort((a,b) => (a[0]||"") < (b[0]||"") ? -1 : (a[0]||"") > (b[0]||"") ? 1 : 0);
@@ -308,7 +353,7 @@ function runPipeline(rows){
     seenEmail.add(eKey); seenPhone.add(pKey);
     const [cc,wo] = splitPhone(phone);
     out.push([
-      convertDate(dateRaw), name, email,
+      convertDate(dateRaw), dayOfWeek(dateRaw), name, email,
       (phone||"").replace(/\D/g,""), cc, wo, prof, exp, age, slug, platform
     ]);
   }
@@ -317,19 +362,47 @@ function runPipeline(rows){
 
 /* ---------- animation helpers ---------- */
 const reduceMotion = window.matchMedia("(prefers-reduced-motion:reduce)").matches;
-function animateCount(el, target, ms){
-  if (reduceMotion || target < 1){ el.textContent = Number(target).toLocaleString(); return; }
+function animateCount(el, target, ms, onDone){
+  if (reduceMotion || target < 1){ el.textContent = Number(target).toLocaleString(); if(onDone) onDone(); return; }
   const start = performance.now();
-  const ease = t => 1 - Math.pow(1 - t, 3);
+  const ease = t => (t>=1 ? 1 : 1 - Math.pow(2, -10*t));     // easeOutExpo
   function step(now){
     const t = Math.min(1, (now - start) / ms);
     el.textContent = Math.round(target * ease(t)).toLocaleString();
     if (t < 1) requestAnimationFrame(step);
-    else el.textContent = Number(target).toLocaleString();
+    else { el.textContent = Number(target).toLocaleString(); if(onDone) onDone(); }
   }
   requestAnimationFrame(step);
 }
 const wait = ms => new Promise(r => setTimeout(r, ms));
+function burst(el){
+  if (reduceMotion || !el) return;
+  const r = el.getBoundingClientRect();
+  const cx = r.left + r.width/2, cy = r.top + r.height/2;
+  const layer = document.createElement("div"); layer.className = "burst";
+  for (let i=0;i<14;i++){
+    const s = document.createElement("i");
+    const a = (Math.PI*2*i/14) + Math.random()*0.5, d = 46 + Math.random()*52;
+    s.style.setProperty("--dx", (Math.cos(a)*d).toFixed(1)+"px");
+    s.style.setProperty("--dy", (Math.sin(a)*d).toFixed(1)+"px");
+    s.style.left = cx+"px"; s.style.top = cy+"px";
+    if (i%2) s.className = "a";
+    s.style.animationDelay = (Math.random()*70).toFixed(0)+"ms";
+    layer.appendChild(s);
+  }
+  document.body.appendChild(layer);
+  setTimeout(()=>layer.remove(), 1300);
+}
+
+/* ---------- theme switcher ---------- */
+const THEME_KEY = "elr-theme";
+function setTheme(t){
+  document.body.dataset.theme = t;
+  document.querySelectorAll(".dot").forEach(d => d.classList.toggle("on", d.dataset.t === t));
+  try { localStorage.setItem(THEME_KEY, t); } catch(e){}
+}
+document.querySelectorAll(".dot").forEach(d => d.addEventListener("click", () => setTheme(d.dataset.t)));
+(function(){ let t = "ember"; try { t = localStorage.getItem(THEME_KEY) || "ember"; } catch(e){} setTheme(t); })();
 
 /* ---------- UI wiring ---------- */
 const $ = id => document.getElementById(id);
@@ -347,6 +420,7 @@ $("download").addEventListener("click",e=>{
   a.href=URL.createObjectURL(blob); a.download=lastName; a.click();
   URL.revokeObjectURL(a.href);
   e.currentTarget.classList.remove("ok"); void e.currentTarget.offsetWidth; e.currentTarget.classList.add("ok");
+  burst(e.currentTarget);
 });
 
 function showErr(msg){ err.textContent=msg; err.classList.add("show"); drop.classList.remove("busy"); }
@@ -378,7 +452,7 @@ function handleFile(file){
 }
 
 async function process(rows){
-  if(!reduceMotion) await wait(420);
+  if(!reduceMotion) await wait(460);
   drop.classList.remove("busy");
 
   const r=runPipeline(rows);
@@ -391,19 +465,19 @@ async function process(rows){
   $("outname").innerHTML = `<b>${r.out.length.toLocaleString()}</b> rows · ${lastName}`;
 
   $("pipe").classList.add("show");
-  const pipe=$("pipe"); pipe.classList.remove("run"); void pipe.offsetWidth; pipe.classList.add("run");
 
   const base = Math.max(1, r.totalIn);
   const vals = [r.totalIn, r.afterFilter, r.out.length, r.out.length];
   const nums = ["s-in","s-filt","s-dedup","s-out"];
   const mets = ["m-in","m-filt","m-dedup","m-out"];
   const cells=[...document.querySelectorAll(".cell")];
-  const stepDelay = reduceMotion ? 0 : 150;
+  const stepDelay = reduceMotion ? 0 : 160;
   for(let i=0;i<cells.length;i++){
+    const last = i===cells.length-1;
     cells[i].classList.add("in","counting");
-    animateCount($(nums[i]), vals[i], reduceMotion?0:900);
+    animateCount($(nums[i]), vals[i], reduceMotion?0:1100, last ? ()=>burst($(nums[i])) : null);
     requestAnimationFrame(()=>{ $(mets[i]).style.width = Math.round(100*vals[i]/base)+"%"; });
-    if(i===cells.length-1) cells[i].classList.add("done");
+    if(last) cells[i].classList.add("done");
     if(stepDelay) await wait(stepDelay);
   }
   buildPreview(r.out);
@@ -423,7 +497,7 @@ function escapeHtml(s){ return String(s??"").replace(/[&<>]/g,c=>({"&":"&amp;","
 function resetAll(){
   currentRows=null; lastCSV=""; fileInput.value="";
   fname.textContent=""; clearErr(); drop.classList.remove("busy");
-  $("pipe").classList.remove("show","run");
+  $("pipe").classList.remove("show");
   $("preview").classList.remove("show");
 }
 </script>
