@@ -8,8 +8,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Rye&family=Zilla+Slab:ital,wght@0,400;0,600;0,700;1,500&family=Special+Elite&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/libphonenumber-js@1.11.4/bundle/libphonenumber-max.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/libphonenumber-js@1.11.4/bundle/libphonenumber-min.js"></script>
 <style>
   :root{
     /* single theme: Blood & Brass on a sheriff's board */
@@ -40,7 +40,7 @@
       linear-gradient(180deg, var(--wood), var(--wood-2));
   }
   /* film grain */
-  body::before{ content:""; position:fixed; inset:0; z-index:4; pointer-events:none; mix-blend-mode:overlay; opacity:.35;
+  body::before{ content:""; position:fixed; inset:0; z-index:4; pointer-events:none; mix-blend-mode:overlay; opacity:.35; transform:translateZ(0); will-change:opacity;
     background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
     animation:flick 1s steps(3) infinite }
   @keyframes flick{ 0%,100%{opacity:.32} 50%{opacity:.4} }
@@ -49,15 +49,16 @@
     background:radial-gradient(140% 110% at 50% 40%, transparent 42%, rgba(8,4,2,.62) 100%) }
 
   /* lantern light drifting */
-  .fx{ position:fixed; inset:0; z-index:0; pointer-events:none; overflow:hidden }
-  .fx .glow{ position:absolute; border-radius:50%; filter:blur(90px); mix-blend-mode:screen }
-  .fx .g1{ width:640px;height:640px; background:radial-gradient(circle, rgba(255,160,70,.16), transparent 62%); top:-220px; left:4%; animation:dr1 28s var(--ease) infinite alternate }
-  .fx .g2{ width:560px;height:560px; background:radial-gradient(circle, rgba(255,190,110,.12), transparent 64%); top:24%; right:0; animation:dr2 34s var(--ease) infinite alternate }
+  .fx{ position:fixed; inset:0; z-index:0; pointer-events:none; overflow:hidden; contain:layout style paint }
+  /* blur(90px) baked into the gradients below — same soft light pools, no per-frame blur pass */
+  .fx .glow{ position:absolute; border-radius:50%; mix-blend-mode:screen }
+  .fx .g1{ width:640px;height:640px; background:radial-gradient(circle, rgba(255,160,70,.16), rgba(255,160,70,.13) 34%, rgba(255,160,70,.07) 58%, rgba(255,160,70,.02) 79%, transparent 96%); top:-220px; left:4%; animation:dr1 28s var(--ease) infinite alternate }
+  .fx .g2{ width:560px;height:560px; background:radial-gradient(circle, rgba(255,190,110,.12), rgba(255,190,110,.095) 34%, rgba(255,190,110,.05) 60%, rgba(255,190,110,.015) 81%, transparent 97%); top:24%; right:0; animation:dr2 34s var(--ease) infinite alternate }
   @keyframes dr1{ to{ transform:translate(130px,70px) scale(1.14) } }
   @keyframes dr2{ to{ transform:translate(-140px,60px) scale(1.1) } }
 
   /* drifting dust motes */
-  .motes{ position:fixed; inset:0; z-index:1; pointer-events:none; overflow:hidden }
+  .motes{ position:fixed; inset:0; z-index:1; pointer-events:none; overflow:hidden; contain:layout style paint }
   .motes i{ position:absolute; bottom:-4vh; border-radius:50%; background:rgba(240,214,160,.5); opacity:0; animation:mote linear infinite }
   @keyframes mote{ 0%{ transform:translate(0,0); opacity:0 } 8%{opacity:.35} 92%{opacity:.25} 100%{ transform:translate(-9vw,-108vh); opacity:0 } }
 
@@ -87,8 +88,8 @@
   @keyframes shine{ 0%{background-position:-180% 0} 100%{background-position:180% 0} }
   @keyframes spinSlow{ to{transform:rotate(360deg)} }
   @keyframes spinFast{ to{transform:rotate(360deg)} }
-  @keyframes emberPulse{ 0%,100%{opacity:.55; box-shadow:0 0 6px 1px rgba(255,120,40,.55)} 50%{opacity:1; box-shadow:0 0 12px 3px rgba(255,140,50,.8)} }
-  @keyframes sweepDown{ 0%{top:-14%; opacity:0} 16%{opacity:.5} 84%{opacity:.5} 100%{top:114%; opacity:0} }
+  @keyframes emberPulse{ 0%,100%{opacity:.55} 50%{opacity:1} }
+  @keyframes sweepDown{ 0%{transform:translateY(0); opacity:0} 16%{opacity:.5} 84%{opacity:.5} 100%{transform:translateY(1040%); opacity:0} }
   @keyframes stampIn{ 0%{opacity:0; transform:scale(2.3) rotate(-14deg)} 60%{opacity:1; transform:scale(.94) rotate(-7deg)} 100%{opacity:1; transform:scale(1) rotate(-8deg)} }
   @keyframes xIn{ 0%{opacity:0; transform:scale(2.6) rotate(6deg)} 55%{opacity:1; transform:scale(.9) rotate(-3deg)} 100%{opacity:.92; transform:scale(1) rotate(0)} }
   @keyframes puff{ 0%{opacity:.7; transform:translate(0,0) scale(.5)} 100%{opacity:0; transform:translate(var(--px),var(--py)) scale(1.6)} }
@@ -130,7 +131,7 @@
     box-shadow:0 2px 4px rgba(0,0,0,.6), 0 0 0 3px rgba(40,26,12,.12); animation:nailGlint 6s ease-in-out infinite }
   .nail.n1{ top:12px; left:16px } .nail.n2{ top:12px; right:16px; animation-delay:1.4s }
   .nail.n3{ bottom:12px; left:16px; animation-delay:2.8s } .nail.n4{ bottom:12px; right:16px; animation-delay:4.2s }
-  .poster .lamp{ position:absolute; left:10%; right:10%; top:-14%; height:70px; pointer-events:none;
+  .poster .lamp{ position:absolute; left:10%; right:10%; top:-84px; height:70px; pointer-events:none; will-change:transform;
     background:linear-gradient(180deg, transparent, rgba(255,220,150,.35), transparent); animation:sweepDown 5s var(--ease) infinite }
   .poster .rule{ height:2px; background:var(--ink); opacity:.75; margin:14px auto; width:78% }
   .poster .rule.thin{ height:1px; opacity:.45; width:64% }
@@ -186,7 +187,7 @@
   .cell .meter{ height:4px; margin-top:14px; border-radius:2px; background:rgba(52,36,16,.16); overflow:visible; position:relative }
   .cell .meter > span{ display:block; height:100%; width:0; border-radius:2px; transition:width 1s var(--spring); background:#4a3013; position:relative }
   .cell .meter > span::after{ content:""; position:absolute; right:-3px; top:50%; width:7px; height:7px; margin-top:-3.5px; border-radius:50%;
-    background:radial-gradient(circle,#ffd27a,#ff7a2a 60%, #b23320); animation:emberPulse 1.4s ease-in-out infinite }
+    background:radial-gradient(circle,#ffd27a,#ff7a2a 60%, #b23320); box-shadow:0 0 10px 2px rgba(255,133,47,.75); animation:emberPulse 1.4s ease-in-out infinite }
   .cell .delta{ font-family:var(--type); font-size:12px; margin-top:12px; color:var(--red-deep); opacity:0 }
   .cell.in .delta{ animation:fadeIn .4s ease .4s both }
   .cell.final{ background:rgba(158,43,26,.08) }
@@ -407,8 +408,7 @@ function toIST(raw){
   if (isNaN(d.getTime())) return null;
   return new Date(d.getTime() + (5*60+30)*60000);            // IST is fixed +5:30
 }
-function convertDate(raw){
-  const ist = toIST(raw);
+function formatIST(ist, raw){
   if (!ist) return (raw||"").trim();
   const dd = String(ist.getUTCDate()).padStart(2,"0");
   const mm = String(ist.getUTCMonth()+1).padStart(2,"0");
@@ -417,7 +417,7 @@ function convertDate(raw){
   const mi = String(ist.getUTCMinutes()).padStart(2,"0");
   return `${dd}-${mm}-${yy} ${h}.${mi}`;
 }
-function dayOfWeek(raw){ const ist = toIST(raw); if(!ist) return ""; const i = ist.getUTCDay(); return (i+1)+" "+DAYS[i]; }
+function dayIST(ist){ if(!ist) return ""; const i = ist.getUTCDay(); return (i+1)+" "+DAYS[i]; }
 function splitPhone(raw){
   const digits = (raw||"").replace(/\D/g,"");
   if (!digits) return ["",""];
@@ -457,8 +457,9 @@ function runPipeline(rows){
     if (seenEmail.has(eKey) || seenPhone.has(pKey)){ dropDup++; continue; }
     seenEmail.add(eKey); seenPhone.add(pKey);
     const [cc,wo] = splitPhone(phone);
+    const ist = toIST(dateRaw);
     out.push([
-      convertDate(dateRaw), dayOfWeek(dateRaw), name, email,
+      formatIST(ist, dateRaw), dayIST(ist), name, email,
       (phone||"").replace(/\D/g,""), cc, wo, prof, exp, age, slug, platform
     ]);
   }
@@ -527,13 +528,20 @@ function centerOf(el){ const r = el.getBoundingClientRect(); return [r.left+r.wi
 (function(){
   const poster = $("drop");
   if (reduceMotion) return;
-  poster.addEventListener("mousemove", e=>{
+  let mx=0, my=0, queued=false, inside=false;
+  function apply(){
+    queued=false;
+    if(!inside) return;
     const r = poster.getBoundingClientRect();
-    const rx = ((e.clientY - r.top)/r.height - .5) * -4;
-    const ry = ((e.clientX - r.left)/r.width - .5) * 4;
+    const rx = ((my - r.top)/r.height - .5) * -4;
+    const ry = ((mx - r.left)/r.width - .5) * 4;
     poster.style.transform = `rotate(-.9deg) perspective(760px) rotateX(${rx.toFixed(2)}deg) rotateY(${ry.toFixed(2)}deg)`;
-  });
-  poster.addEventListener("mouseleave", ()=>{ poster.style.transform = "rotate(-.9deg)"; });
+  }
+  poster.addEventListener("mousemove", e=>{
+    mx=e.clientX; my=e.clientY; inside=true;
+    if(!queued){ queued=true; requestAnimationFrame(apply); }
+  }, {passive:true});
+  poster.addEventListener("mouseleave", ()=>{ inside=false; poster.style.transform = "rotate(-.9deg)"; }, {passive:true});
 })();
 
 /* ---------- mission banner ---------- */
@@ -635,7 +643,7 @@ function gunshot(btn){
 
 /* ---------- UI wiring ---------- */
 const drop=$("drop"), fileInput=$("file"), fname=$("fname"), err=$("err");
-let lastCSV="", lastName="Exotic_sorted_output.csv", currentRows=null;
+let lastCSV="", lastName="Exotic_sorted_output.csv";
 
 ["dragenter","dragover"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add("drag");document.body.classList.add("deadeye");}));
 ["dragleave","drop"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove("drag");document.body.classList.remove("deadeye");}));
@@ -656,6 +664,10 @@ function clearErr(){ err.classList.remove("show"); }
 
 function handleFile(file){
   clearErr();
+  if (typeof Papa === "undefined"){
+    showErr("The CSV parser didn't load (check your internet connection and reload).");
+    return;
+  }
   if (typeof libphonenumber === "undefined" || !libphonenumber.parsePhoneNumberFromString){
     showErr("The phone-parsing library didn't load (check your internet connection and reload). Country codes can't be detected without it, so processing is paused to avoid mislabeling numbers.");
     return;
@@ -675,7 +687,7 @@ function handleFile(file){
         showErr("Unexpected columns. Expected a lead export with date_created, name, email, phone_number, current_profession, experience_in_years, age_group, form_id.slug.");
         return;
       }
-      currentRows=rows; process(rows);
+      process(rows);
     },
     error:e=>{ document.body.classList.remove("deadeye"); showErr("Could not read the file: "+e.message); }
   });
@@ -748,7 +760,7 @@ function buildPreview(out){
 function escapeHtml(s){ return String(s??"").replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c])); }
 
 function resetAll(){
-  currentRows=null; lastCSV=""; fileInput.value="";
+  lastCSV=""; fileInput.value="";
   fname.textContent=""; clearErr(); drop.classList.remove("busy");
   document.body.classList.remove("deadeye");
   $("pipe").classList.remove("show");
